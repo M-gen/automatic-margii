@@ -65,14 +65,9 @@ def DoSetup3(base_movie, bgm, bgm_volume, out_path):
             print("Time",p1)
             time = p1
 
-    #bgm  = 'a.mp3'
-    #bgm_volume = '0.03'
-    #out  = 'conect_2.mp4'
     tmp_bgm = out_path + "_loop.mp3"
 
-
     FFmpeg( ' -y -stream_loop -1 -i "{}" -af "volume={}" -t "{}" "{}"'.format(bgm, bgm_volume, time, tmp_bgm) )
-    #FFmpeg( ' -y -stream_loop -1 -i "{}" -vcodec copy -af "volume={}" -t "{}" "{}"'.format(bgm, bgm_volume, time, tmp_bgm) )
         
     FFmpeg( ' -y -i "{}" -i "{}" -filter_complex "[0:1][1:0] amerge=inputs=2" "{}" -t "{}" '.format( base_movie, tmp_bgm, out_path, time ) )
 
@@ -129,21 +124,26 @@ class SetupStatus():
 
         eye_catch_movies = glob.glob(src_materials_directory+"/eyecatch/"+"*.mp4")
         bgms = glob.glob(src_materials_directory+"/bgm/"+"*.mp3")
+        end_movies = glob.glob(src_materials_directory+"/end_movie/"+"*.mp4")
+
+        if len(end_movies) > 0 :
+            tmp.append("end_movie")
 
         self.args                 = args
         self.step_do              = step_do
         self.eye_catch_insert_pos = eye_catch_insert_pos
         self.src_files            = src_files
         self.movie_command        = movie_command
+
         self.eye_catch_movies     = eye_catch_movies
         self.bgms                 = bgms
+        self.end_movies           = end_movies
         
         
 setup_status = SetupStatus()
 
 print(vars(setup_status))
 Setup(setup_status)
-#input("Please Enter > ")
 
 step_counte = -1
 step_counte += 1
@@ -172,21 +172,17 @@ if setup_status.step_do[step_counte]:
         out_path = target_directory+'/'+str(i)+'.mp4'
 
         if tmp[0] == "eyecatch":
-            #print("e")
             shutil.copy( setup_status.eye_catch_movies[0], out_path )
+
+        if tmp[0] == "end_movie":
+            shutil.copy( setup_status.end_movies[0], out_path )
 
         if tmp[0] == "conect_movies":
             movie_num = int(tmp[1])
-            #print("m",tmp[1], mix_files[use_movie_count:use_movie_count+movie_num])
             if movie_num == 1:
                 shutil.copy( mix_files[use_movie_count], out_path )
             else :
                 tmp_mix_files = []
-                #for i in mix_files[use_movie_count:use_movie_count+movie_num]:
-                #    tmp_mix_files.append( work_directory+'/'+i )
-
-                    
-                #input(tmp_mix_files) 
                 DoStep2( mix_files[use_movie_count:use_movie_count+movie_num], out_path)
 
             use_movie_count += movie_num 
@@ -194,8 +190,6 @@ if setup_status.step_do[step_counte]:
 
 step_counte += 1
 if setup_status.step_do[step_counte]:
-
-
     src_files = glob.glob(work_directory+"/Step2/"+"*.mp4")
     src_files.sort()
 
@@ -212,51 +206,25 @@ if setup_status.step_do[step_counte]:
             print("e")
             shutil.copy( src_files[i], out_path )
 
+        if tmp[0] == "end_movie":
+            shutil.copy( src_files[i], out_path )
+
         if tmp[0] == "conect_movies":
             movie_num = int(tmp[1])
             print("m",tmp[1], src_files[i])
-            #DoSetup3( src_files[i], 'a.mp3', setup_status.args.bgm_volume, out_path)
             DoSetup3( src_files[i], setup_status.bgms[0], setup_status.args.bgm_volume, out_path)
-            #if movie_num == 1:
-            #    shutil.copy( src_files[i], out_path )
-            #else :
-            #    tmp_mix_files = []
-            #    #for i in mix_files[use_movie_count:use_movie_count+movie_num]:
-            #    #    tmp_mix_files.append( work_directory+'/'+i )
-#
-            #        
-            #    #input(tmp_mix_files) 
-            #    #DoStep2( mix_files[use_movie_count:use_movie_count+movie_num], out_path)
-            #    DoSetup3( src_files[i], setup_status.bgms[0], setup_status.args.bgm_volume, out_path)
 
-            #use_movie_count += movie_num 
-
-input("aaaa")
-
+step_counte += 1
 if setup_status.step_do[step_counte]:
-    main = '{}/conect.mp4'.format(work_directory)
+    src_files = glob.glob(work_directory+"/Step3/"+"*.mp4")
+    src_files.sort()
 
-    res = Ffprobe(main)
-    #print(res)
-    lines = res.split('\n')
-    time = "0:0"
-    for line in lines:
-        if line.find("Duration") >= 0 :    
-            p1 = line.split(',')[0].split(' ')[3]
-            print("Time",p1)
-            time = p1
-
-    bgm  = 'a.mp3'
-    bgm_volume = '0.03'
-    out  = 'conect_2.mp4'
-    FFmpeg( ' -y -stream_loop -1 -i "a.mp3" -vcodec copy -af "volume={}" -t {} "a2.mp3"'.format(bgm_volume, time) )
-    bgm2 = 'a2.mp3'
-    FFmpeg( ' -y -i "{}" -i "{}" -filter_complex "[0:1][1:0] amerge=inputs=2" "{}" -t {} '.format( main, bgm2, out, time ) )
-
-if step_do[3]:
-    items = [ "conect_2.mp4", "main_02.mp4" ]
-    out_conect_file = "conect_3.mp4"
+    CleanDirectory("Step4")
+    target_directory = work_directory + '/' + "Step4"
+    out_conect_file = target_directory + "/out.mp4"
     tmp = ""
-    for i in items:
+    for i in src_files:
         tmp += ' -i "{}" '.format(i)
-    FFmpeg( ' -y {} -filter_complex "concat=n={}:v=1:a=1" {}'.format( tmp, len(items), out_conect_file ) )
+    FFmpeg( ' -y {} -filter_complex "concat=n={}:v=1:a=1" {}'.format( tmp, len(src_files), out_conect_file ) )
+
+print("End")

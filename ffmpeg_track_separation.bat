@@ -1,1 +1,1 @@
-Python ffmpeg_track_separation.py --step_do "0 0 1 0 0" --e "1 2"
+Python ffmpeg_track_separation.py --step_do "1 1 1 1" --e "1 2"

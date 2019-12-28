@@ -48,15 +48,34 @@ def DoStep1( target_directory, in_file ):
     FFmpeg( ' -y -i "{}" -i "{}" -c:v copy -c:a aac -strict -2 -map 0:v:0 -map 1:a:0 "{}"'.format( out_file_movie, out_file_wav, out_mix_file_movie ) )
 
 
-def Do2( items, out_path ):
-    #global work_directory
-    #target_directory = work_directory + '/' + target_directory
-    #out_conect_file = '{}/conect.mp4'.format(target_directory)
-
+def DoStep2( items, out_path ):
     tmp = ""
     for i in items:
         tmp += ' -i "{}" '.format(i)
     FFmpeg( ' -y {} -filter_complex "concat=n={}:v=1:a=1" -strict -2 {}'.format( tmp, len(items), out_path ) )
+
+
+def DoSetup3(base_movie, bgm, bgm_volume, out_path):
+    res = Ffprobe(base_movie)
+    lines = res.split('\n')
+    time = "0:0"
+    for line in lines:
+        if line.find("Duration") >= 0 :    
+            p1 = line.split(',')[0].split(' ')[3]
+            print("Time",p1)
+            time = p1
+
+    #bgm  = 'a.mp3'
+    #bgm_volume = '0.03'
+    #out  = 'conect_2.mp4'
+    tmp_bgm = out_path + "_loop.mp3"
+
+
+    FFmpeg( ' -y -stream_loop -1 -i "{}" -af "volume={}" -t "{}" "{}"'.format(bgm, bgm_volume, time, tmp_bgm) )
+    #FFmpeg( ' -y -stream_loop -1 -i "{}" -vcodec copy -af "volume={}" -t "{}" "{}"'.format(bgm, bgm_volume, time, tmp_bgm) )
+        
+    FFmpeg( ' -y -i "{}" -i "{}" -filter_complex "[0:1][1:0] amerge=inputs=2" "{}" -t "{}" '.format( base_movie, tmp_bgm, out_path, time ) )
+
 
 src_materials_directory = "src_materials"
 src_movie_directory = "src_movie"
@@ -72,6 +91,7 @@ class SetupStatus():
         p.add_argument('-s', '--step_do',    default="1 1 1 1", help="実行するステップを指定する")
         p.add_argument('-c', '--clean_work', default=False,     help="一時ディレクトリを削除してから実行する")
         p.add_argument('-e', '--eye_catch',  default="1",       help="アイキャッチの挿入位置")
+        p.add_argument('-b', '--bgm_volume', default="0.03",    help="bgmの音量を設定する")
         args = p.parse_args()
 
         tmp = args.step_do.split(' ')
@@ -108,6 +128,7 @@ class SetupStatus():
         movie_command = tmp
 
         eye_catch_movies = glob.glob(src_materials_directory+"/eyecatch/"+"*.mp4")
+        bgms = glob.glob(src_materials_directory+"/bgm/"+"*.mp3")
 
         self.args                 = args
         self.step_do              = step_do
@@ -115,6 +136,7 @@ class SetupStatus():
         self.src_files            = src_files
         self.movie_command        = movie_command
         self.eye_catch_movies     = eye_catch_movies
+        self.bgms                 = bgms
         
         
 setup_status = SetupStatus()
@@ -123,7 +145,9 @@ print(vars(setup_status))
 Setup(setup_status)
 #input("Please Enter > ")
 
-if setup_status.step_do[0]:
+step_counte = -1
+step_counte += 1
+if setup_status.step_do[step_counte]:
     files = glob.glob(src_movie_directory+"/"+"*.mp4")
     files.sort()
     print(files)
@@ -132,16 +156,14 @@ if setup_status.step_do[0]:
     for i in files:
         DoStep1( "Step1", i )
 
-# 挿入位置からの連結の流れを作る
-
-if setup_status.step_do[1]:
+step_counte += 1
+if setup_status.step_do[step_counte]:
     
     mix_files = glob.glob(work_directory+"/Step1/"+"*mix.mp4")
 
     CleanDirectory("Step2")
-    
-    target_directory = work_directory + '/' + "Step2"
 
+    target_directory = work_directory + '/' + "Step2"
     use_movie_count = 0
     for i, command in enumerate( setup_status.movie_command ):
         print(command)
@@ -150,14 +172,12 @@ if setup_status.step_do[1]:
         out_path = target_directory+'/'+str(i)+'.mp4'
 
         if tmp[0] == "eyecatch":
-            print("e")
+            #print("e")
             shutil.copy( setup_status.eye_catch_movies[0], out_path )
+
         if tmp[0] == "conect_movies":
-
-            # Todo : ファイルが1つならコピーでいい
-
             movie_num = int(tmp[1])
-            print("m",tmp[1], mix_files[use_movie_count:use_movie_count+movie_num])
+            #print("m",tmp[1], mix_files[use_movie_count:use_movie_count+movie_num])
             if movie_num == 1:
                 shutil.copy( mix_files[use_movie_count], out_path )
             else :
@@ -167,22 +187,53 @@ if setup_status.step_do[1]:
 
                     
                 #input(tmp_mix_files) 
-                Do2( mix_files[use_movie_count:use_movie_count+movie_num], out_path)
+                DoStep2( mix_files[use_movie_count:use_movie_count+movie_num], out_path)
 
             use_movie_count += movie_num 
 
-input()
 
-if setup_status.step_do[2]:
-    mix_files = glob.glob(work_directory+"/Step1/"+"*mix.mp4")
-
-
-    CleanDirectory("Step2")
-    print(mix_files)
-    Do2("Step2",mix_files)
+step_counte += 1
+if setup_status.step_do[step_counte]:
 
 
-if step_do[2]:
+    src_files = glob.glob(work_directory+"/Step2/"+"*.mp4")
+    src_files.sort()
+
+    CleanDirectory("Step3")
+
+    target_directory = work_directory + '/' + "Step3"
+    for i, command in enumerate( setup_status.movie_command ):
+        print(command)
+        tmp = command.split(' ')
+        
+        out_path = target_directory+'/'+str(i)+'.mp4'
+
+        if tmp[0] == "eyecatch":
+            print("e")
+            shutil.copy( src_files[i], out_path )
+
+        if tmp[0] == "conect_movies":
+            movie_num = int(tmp[1])
+            print("m",tmp[1], src_files[i])
+            #DoSetup3( src_files[i], 'a.mp3', setup_status.args.bgm_volume, out_path)
+            DoSetup3( src_files[i], setup_status.bgms[0], setup_status.args.bgm_volume, out_path)
+            #if movie_num == 1:
+            #    shutil.copy( src_files[i], out_path )
+            #else :
+            #    tmp_mix_files = []
+            #    #for i in mix_files[use_movie_count:use_movie_count+movie_num]:
+            #    #    tmp_mix_files.append( work_directory+'/'+i )
+#
+            #        
+            #    #input(tmp_mix_files) 
+            #    #DoStep2( mix_files[use_movie_count:use_movie_count+movie_num], out_path)
+            #    DoSetup3( src_files[i], setup_status.bgms[0], setup_status.args.bgm_volume, out_path)
+
+            #use_movie_count += movie_num 
+
+input("aaaa")
+
+if setup_status.step_do[step_counte]:
     main = '{}/conect.mp4'.format(work_directory)
 
     res = Ffprobe(main)

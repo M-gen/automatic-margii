@@ -32,4 +32,4 @@ Python ffmpeg_track_separation.py --step_do "1 1 1 1" --e "1 2"
 
 ## Author
 
-[tcnksm](https://github.com/M-gen)
+[えむげん](https://github.com/M-gen)

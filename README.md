@@ -20,7 +20,7 @@ Automatic-Margii
 ## Usage
 
 ```
-Python ffmpeg_track_separation.py --step_do "1 1 1 1" --e "1 2"
+Python main.py --step_do "1 1 1 1" --e "1 2"
 ```
 
 ## Install
@@ -28,7 +28,7 @@ Python ffmpeg_track_separation.py --step_do "1 1 1 1" --e "1 2"
 ## Contribution
 
 ## Licence
-
+[MIT](https://github.com/M-gen/automatic-margii/blob/master/LICENSE)
 
 ## Author
 

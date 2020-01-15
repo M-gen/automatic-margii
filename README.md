@@ -36,7 +36,7 @@ Automatic-Margii
    work フォルダが作成され、work/Step4/out.mp4 に結合したファイルが出力される
 
 ## Licence
-[MIT](https://github.com/M-gen/automatic-margii/blob/master/LICENSE)
+[MIT](https://github.com/M-gen/automatic-margii/blob/master/LICENSE.txt)
 
 ## Author
 
